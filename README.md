@@ -6,12 +6,11 @@ In this capstone project week, you'll learn how to use Bitcoin Core's RPC to int
 
 A [docker-compose](./docker-compose.yaml) file is provided to help you launch a Bitcoin node in `regtest` mode locally.
 
-> [!TIP]
-> [OPTIONAL] You can also use the [bitcoin.conf](./bitcoin.conf) file to start a local regtest node with your locally built bitcoin binaries.
+> [!TIP] > [OPTIONAL] You can also use the [bitcoin.conf](./bitcoin.conf) file to start a local regtest node with your locally built bitcoin binaries.
 > Copy the `bitcoin.conf` file in the default bitcoin data-directory `~/.bitcoin/`. If you don't have the data-directory, just create one.
 
-
 ## Objective
+
 Implement the tasks in this specific directory: [main.rs](./rust/src/main.rs)
 
 Your program must:
@@ -26,9 +25,10 @@ Your program must:
 - Fetch the unconfirmed transaction from the node's mempool and print the result. (hint: `bitcoin-cli help` to find list of all commands, look for `getmempoolentry`).
 - Confirm the transaction by mining 1 block.
 
-
 ### Output
+
 - Fetch the following details of the transaction and output them to a `out.txt` file in the following format. Each attribute should be on a new line.
+
   - `Transaction ID (txid)`
   - `Miner's Input Address`
   - `Miner's Input Amount (in BTC)`
@@ -40,8 +40,8 @@ Your program must:
   - `Block height at which the transaction is confirmed`
   - `Block hash at which the transaction is confirmed`
 
-
 - Sample output file:
+
   ```
   57ecbb84fd3246ebcc734455fd30f5536637878b40fb2742d1a4fced3c28862c
   bcrt1qv5plgft75j0hegtvf6zs5pajh7k0gxg2dhj224
@@ -56,7 +56,9 @@ Your program must:
   ```
 
 ### Local Testing Steps
+
 It's a good idea to run the whole test locally to ensure your code is working properly.
+
 - Ensure that you have `npm` and `nvm` installed and your system. You will need `node v18` or greater to run the test script.
 - Ensure that there is no `bitcoind` process running in your system.
 - Give execution permission to `test.sh`, by running `chmod +x ./test.sh`.
@@ -64,37 +66,45 @@ It's a good idea to run the whole test locally to ensure your code is working pr
 
 If your code works, you will see the test completed successfully.
 
-## Submission:
- - Create a commit with your local changes.
- - Push the commit to your forked repository (`git push origin main`).
-  - The autograder will run your script against a test script to verify the functionality.
-  - Check the status of the autograder on Github Actions to see if it passed successfully or failed.
-  - You can submit multiple times before the deadline. The latest submission before the deadline will be considered your final submission.
-  
+## Submission
+
+- Create a commit with your local changes.
+- Push the commit to your forked repository (`git push origin main`).
+- The autograder will run your script against a test script to verify the functionality.
+- Check the status of the autograder on Github Actions to see if it passed successfully or failed.
+- You can submit multiple times before the deadline. The latest submission before the deadline will be considered your final submission.
+
 Submit your final solution link to this form: [Google form](https://forms.gle/a3ibaSHcqpaZWsnPA).
 
 ### Common Issues
+
 - Your submission should not stop the Bitcoin Core daemon at any point.
 - Linux and MacOS are the recommended operating systems for this challenge. If you are using Windows, you may face compatibility issues.
 - The autograder will run the test script on an Ubuntu 22.04 environment. Make sure your script is compatible with this environment.
 - If you are unable to run the test script locally, you can submit your solution and check the results on the Github Actions tab.
 
 ## Evaluation Criteria
+
 Your submission will be evaluated based on:
+
 - **Autograder**: Your code must pass the autograder [test script](./test/test.spec.ts).
 - **Explainer Comments**: Include comments explaining each step of your code.
 - **Code Quality**: Your code should be well-organized, commented, and adhere to best practices.
 
 ### Plagiarism Policy
+
 Our plagiarism detection checker thoroughly identifies any instances of copying or cheating. Participants are required to publish their solutions in the designated repository, which is private and accessible only to the individual and the administrator. Solutions should not be shared publicly or with peers. In case of plagiarism, both parties involved will be directly disqualified to maintain fairness and integrity.
 
 ### AI Usage Disclaimer
+
 You may use AI tools like ChatGPT to gather information and explore alternative approaches, but avoid relying solely on AI for complete solutions. Verify and validate any insights obtained and maintain a balance between AI assistance and independent problem-solving.
 
 ## Why These Restrictions?
+
 These rules are designed to enhance your understanding of the technical aspects of Bitcoin. By completing this assignment, you gain practical experience with the technology that secures and maintains the trustlessness of Bitcoin. This challenge not only tests your ability to develop functional Bitcoin applications but also encourages deep engagement with the core elements of Bitcoin technology.
 
 ### Additional Resources
+
 - [Rust RPC client for Bitcoin Core JSON-RPC](https://github.com/rust-bitcoin/rust-bitcoincore-rpc)
 - [Bitcoin Core Documentation](https://developer.bitcoin.org/)
 - [Learning Bitcoin from the Command Line](https://github.com/BlockchainCommons/Learning-Bitcoin-from-the-Command-Line)

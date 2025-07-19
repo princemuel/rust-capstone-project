@@ -1,3 +1,5 @@
-#!/bin/bash
-cd "$(dirname "$0")"
-cargo run
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")" || exit
+
+cargo run --release
