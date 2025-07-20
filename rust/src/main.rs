@@ -31,7 +31,7 @@ fn send(rpc: &Client, addr: &str) -> bitcoincore_rpc::Result<String> {
     #[derive(Deserialize)]
     struct SendResult {
         complete: bool,
-        txid:     String,
+        txid: String,
     }
     let send_result = rpc.call::<SendResult>("send", &args)?;
     assert!(send_result.complete);
