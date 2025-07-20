@@ -184,7 +184,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let transaction_fees = input_amount - total_output;
 
     // Write the data to ../out.txt in the specified format given in readme.md
-    let mut file = File::create("out.txt")?;
+    let mut file = File::create("../out.txt")?;
 
     // Transaction ID (txid)
     writeln!(file, "{txid}")?;
