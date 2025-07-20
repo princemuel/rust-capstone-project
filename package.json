@@ -1,7 +1,7 @@
 {
   "name": "rust-capstone-project",
   "version": "0.0.0",
-  "description": "",
+  "description": "just another btrust builders project",
   "scripts": {
     "test": "jest"
   },
