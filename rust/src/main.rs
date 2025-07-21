@@ -1,14 +1,8 @@
-#![allow(unused)]
 use std::fs::File;
 use std::io::Write;
 
-use bitcoin::hex::DisplayHex;
 use bitcoincore_rpc::bitcoin::{Address, Amount, Network};
-use bitcoincore_rpc::json::AddressType;
-use bitcoincore_rpc::jsonrpc::error::RpcError;
-use bitcoincore_rpc::{Auth, Client, RpcApi, bitcoin, jsonrpc};
-use serde::Deserialize;
-use serde_json::json;
+use bitcoincore_rpc::{Auth, Client, RpcApi};
 
 // Node access params
 const RPC_URL: &str = "http://127.0.0.1:18443"; // Default regtest RPC port
@@ -64,15 +58,9 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("Mining blocks until we get a positive spendable balance...");
 
     let (blocks_mined, balance) = {
-        // Create a simple counter that goes 1, 2, 3, 4...
-        let mut count = 0;
-        let mut counter = std::iter::from_fn(|| {
-            count += 1;
-            Some(count)
-        });
-
-        // Keep trying until we find a positive balance
-        counter.find_map(|count| {
+        // Use an infinite range (0, 1, 2, 3...) to count mining attempts
+        // find_map() will keep trying each number until we get a positive balance
+        (0..).find_map(|count| {
             // Step 1: Mine exactly one block and send reward to our address
             miner_rpc.generate_to_address(1, &miner_address).ok()?;
 
@@ -117,23 +105,17 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("Mined 1 confirmation block");
 
     // Extract all required transaction details
-    let tx_info = miner_rpc.get_transaction(&txid, None)?;
+    // let tx_info = miner_rpc.get_transaction(&txid, None)?;
     let raw_tx = rpc.get_raw_transaction(&txid, None)?;
 
     // Get block information
     let best_block_hash = rpc.get_best_block_hash()?;
     let block_height = rpc.get_block_count()?;
-    let block_info = rpc.get_block(&best_block_hash)?;
 
     // Extract transaction details
-    let mut input_address = String::with_capacity(42);
-    let mut input_amount = 0.0;
-
-    let mut output_address = String::with_capacity(42);
-    let mut output_amount = 0.0;
-
-    let mut change_address = String::with_capacity(42);
-    let mut change_amount = 0.0;
+    let (mut input_address, mut input_amount) = (String::with_capacity(42), 0.0);
+    let (mut output_address, mut output_amount) = (String::with_capacity(42), 0.0);
+    let (mut change_address, mut change_amount) = (String::with_capacity(42), 0.0);
 
     // Get input details: via the previous transaction outputs
     if let Some(input) = raw_tx.input.first() {
@@ -149,19 +131,18 @@ fn main() -> bitcoincore_rpc::Result<()> {
     }
 
     // Get output details
+    let trader_addr_str = trader_address.to_string();
     for output in &raw_tx.output {
-        let address = match Address::from_script(&output.script_pubkey, Network::Regtest) {
-            Ok(addr) => addr,
-            Err(_) => continue,
+        let Ok(address) = Address::from_script(&output.script_pubkey, Network::Regtest) else {
+            continue;
         };
 
-        let address = address.to_string();
-        let amount = output.value.to_btc();
+        let (addr_str, amount) = (address.to_string(), output.value.to_btc());
 
-        if address == trader_address.to_string() {
-            (output_address, output_amount) = (address, amount);
+        if addr_str == trader_addr_str {
+            (output_address, output_amount) = (addr_str, amount);
         } else {
-            (change_address, change_amount) = (address, amount);
+            (change_address, change_amount) = (addr_str, amount);
         }
     }
 
