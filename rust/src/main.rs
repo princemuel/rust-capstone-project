@@ -15,29 +15,6 @@ const RPC_URL: &str = "http://127.0.0.1:18443"; // Default regtest RPC port
 const RPC_USER: &str = "alice";
 const RPC_PASS: &str = "password";
 
-// You can use calls not provided in RPC lib API using the generic `call`
-// function. An example of using the `send` RPC call, which doesn't have exposed
-// API. You can also use serde_json `Deserialize` derivation to capture the
-// returned json result.
-fn send(rpc: &Client, addr: &str) -> bitcoincore_rpc::Result<String> {
-    let args = [
-        json!([{addr : 100 }]), // recipient address
-        json!(null),            // conf target
-        json!(null),            // estimate mode
-        json!(null),            // fee rate in sats/vb
-        json!(null),            // Empty option object
-    ];
-
-    #[derive(Deserialize)]
-    struct SendResult {
-        complete: bool,
-        txid: String,
-    }
-    let send_result = rpc.call::<SendResult>("send", &args)?;
-    assert!(send_result.complete);
-    Ok(send_result.txid)
-}
-
 fn main() -> bitcoincore_rpc::Result<()> {
     // Connect to Bitcoin Core RPC
     let rpc = Client::new(
@@ -49,12 +26,13 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let blockchain_info = rpc.get_blockchain_info()?;
     println!("Blockchain Info: {blockchain_info:?}");
 
-    // Load or Create the relevant Wallets
-    if rpc.load_wallet("Miner").is_err() {
-        rpc.create_wallet("Miner", None, None, None, None)?;
-    }
-    if rpc.load_wallet("Trader").is_err() {
-        rpc.create_wallet("Trader", None, None, None, None)?;
+    let wallets = rpc.list_wallets()?;
+    for wallet in ["Miner", "Trader"] {
+        if !wallets.contains(&wallet.to_string()) {
+            rpc.create_wallet(wallet, None, None, None, None)?;
+        } else {
+            rpc.load_wallet(wallet)?;
+        }
     }
 
     // Create a separate RPC client for each wallet
@@ -72,38 +50,46 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let miner_address = miner_rpc.get_new_address(Some("Mining Reward"), None)?;
     let miner_address = miner_address.assume_checked();
 
-    let mut blocks_mined = 0;
-    let mut balance = Amount::ZERO;
-
+    // When you mine a block, you get a "coinbase reward" (free Bitcoin for mining).
+    // BUT - there's a catch! You can't spend this reward immediately.
+    // Bitcoin has a safety rule: you must wait for 100 MORE blocks to be mined
+    // before you can spend your reward. This prevents cheating.
+    //
+    // Example timeline:
+    // - Block 1: You mine it, get reward, but can't spend it yet
+    // - Blocks 2-100: Other blocks get mined (99 blocks)
+    // - Block 101: NOW you can finally spend your reward from block 1!
+    //
+    // This is why we need to mine 101 blocks total to see spendable money.
     println!("Mining blocks until we get a positive spendable balance...");
-    while balance == Amount::ZERO {
-        // Mine one block at a time
-        miner_rpc.generate_to_address(1, &miner_address)?;
-        blocks_mined += 1;
 
-        // Check spendable balance (excluding immature coinbase)
-        balance = miner_rpc.get_balance(None, None)?;
-        if blocks_mined % 10 == 0 {
-            println!(
-                "Mined {} blocks, spendable balance: {} BTC",
-                blocks_mined,
-                balance.to_btc()
-            );
-        }
+    let (blocks_mined, balance) = {
+        // Create a simple counter that goes 1, 2, 3, 4...
+        let mut count = 0;
+        let mut counter = std::iter::from_fn(|| {
+            count += 1;
+            Some(count)
+        });
+
+        // Keep trying until we find a positive balance
+        counter.find_map(|count| {
+            // Step 1: Mine exactly one block and send reward to our address
+            miner_rpc.generate_to_address(1, &miner_address).ok()?;
+
+            // Step 2: Check how much money we can actually spend right now
+            // (This excludes "locked" coinbase rewards that aren't mature yet)
+            let balance = miner_rpc.get_balance(None, None).ok()?;
+
+            // Step 3: If we finally have spendable money, return it!
+            // Otherwise, keep mining more blocks
+            (balance != Amount::ZERO).then_some((count, balance))
+        })
     }
+    .unwrap_or((0, Amount::ZERO)); // Fallback if something goes wrong
 
-    // In Bitcoin, newly mined coinbase transactions have a maturity period of 100
-    // blocks. This means the coinbase reward from a block can only be spent
-    // after 100 more blocks have been mined on top of it. The first block's
-    // reward becomes spendable after block 101 is mined, which is why it takes
-    // exactly 101 blocks to get a positive spendable balance in a fresh regtest
-    // environment.
-    println!(
-        "Mined {} blocks to get positive spendable balance of {} BTC",
-        blocks_mined,
-        balance.to_btc()
-    );
-    println!("Miner wallet balance: {} BTC", balance.to_btc());
+    let (total_blocks, balance_btc) = (blocks_mined, balance.to_btc());
+    println!("Success! Mined {total_blocks} blocks to get {balance_btc} BTC");
+    println!("Our wallet now has: {balance_btc} BTC available");
 
     // Load Trader Wallet and generate a new address
     let trader_address = trader_rpc.get_new_address(Some("Received"), None)?;
