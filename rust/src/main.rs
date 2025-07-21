@@ -18,7 +18,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     // Get blockchain info
     let blockchain_info = rpc.get_blockchain_info()?;
-    println!("Blockchain Info: {blockchain_info:?}");
+    println!("Blockchain Info: {blockchain_info:#?}");
 
     let wallets = rpc.list_wallets()?;
     for wallet in ["Miner", "Trader"] {
@@ -70,7 +70,8 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
             // Step 3: If we finally have spendable money, return it!
             // Otherwise, keep mining more blocks
-            (balance != Amount::ZERO).then_some((count, balance))
+            #[allow(clippy::unnecessary_lazy_evaluations)]
+            (balance != Amount::ZERO).then(|| (count, balance))
         })
     }
     .unwrap_or((0, Amount::ZERO)); // Fallback if something goes wrong
