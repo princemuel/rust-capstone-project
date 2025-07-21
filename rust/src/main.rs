@@ -105,7 +105,6 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("Mined 1 confirmation block");
 
     // Extract all required transaction details
-    // let tx_info = miner_rpc.get_transaction(&txid, None)?;
     let raw_tx = rpc.get_raw_transaction(&txid, None)?;
 
     // Get block information
@@ -124,10 +123,9 @@ fn main() -> bitcoincore_rpc::Result<()> {
         input_amount = prev_output.value.to_btc();
 
         // Get the address from the script
-        if let Ok(address) = Address::from_script(&prev_output.script_pubkey, Network::Regtest)
-        {
-            input_address = address.to_string();
-        }
+        input_address = Address::from_script(&prev_output.script_pubkey, Network::Regtest)
+            .map(|addr| addr.to_string())
+            .unwrap_or_default();
     }
 
     // Get output details
@@ -150,32 +148,12 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let total_output: f64 = raw_tx.output.iter().map(|out| out.value.to_btc()).sum();
     let transaction_fees = input_amount - total_output;
 
-    // Write the data to ../out.txt in the specified format given in readme.md
     let mut file = File::create("../out.txt")?;
 
-    // Transaction ID (txid)
-    writeln!(file, "{txid}")?;
-
-    // Miner's Input Address and Amount (BTC)
-    writeln!(file, "{input_address}")?;
-    writeln!(file, "{input_amount}")?;
-
-    // Trader's Input Address and Amount (BTC)
-    writeln!(file, "{output_address}")?;
-    writeln!(file, "{output_amount}")?;
-
-    // Miner's Change Address and Amount (BTC)
-    writeln!(file, "{change_address}")?;
-    writeln!(file, "{change_amount}")?;
-
-    // Transaction Fees (BTC)
-    writeln!(file, "{transaction_fees:.2e}")?;
-
-    // Block height at which the transaction is confirmed
-    writeln!(file, "{block_height}")?;
-
-    // Block hash at which the transaction is confirmed
-    writeln!(file, "{best_block_hash}")?;
+    write!(
+        file,
+        "{txid}\n{input_address}\n{input_amount}\n{output_address}\n{output_amount}\n{change_address}\n{change_amount}\n{transaction_fees:.2e}\n{block_height}\n{best_block_hash}\n"
+    )?;
 
     println!("Transaction details written to out.txt");
 
